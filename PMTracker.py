@@ -1,10 +1,8 @@
-__version__ = (1, 6)
-
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
 # meta developer: @dubai_ip
-# meta pic: https://x0.at/5b6t.jpg
+# meta banner: https://raw.githubusercontent.com/crypto-killu/modules-by-killu/main/Module-banners/PMTracker.jpg
 # scope: Heroku_only
-# version: 1.6
+# version: 2.1
 # author: Killu
 # desc: Модуль для сохранения удаленных сообщений в личках.
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
