@@ -1,4 +1,11 @@
-__version__ = (4, 5, 1)
+# ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
+# meta developer: @dubai_ip
+# meta banner: https://raw.githubusercontent.com/crypto-killu/modules-by-killu/main/Module-banners/MazeGame.jpg
+# scope: Heroku, Hikka
+# version: 4.5
+# author: Killu
+# Description: Модуль для игры одному или с собеседником.
+# ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
 
 import asyncio
 import logging
