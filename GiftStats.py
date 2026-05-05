@@ -1,10 +1,10 @@
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
 # meta developer: @dubai_ip
-# meta pic: https://x0.at/5b6t.jpg
-# scope: Heroku_only
-# version: 1.1
+# meta banner: https://raw.githubusercontent.com/crypto-killu/modules-by-killu/main/Module-banners/GiftStats.jpg
+# scope: Heroku, Hikka
+# version: 2.7
 # author: Killu
-# desc: Анализирует подарки в профиле, и называет цену всех подарков.
+# Description: Анализирует подарки в профиле, и называет цену всех подарков.
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
 
 from .. import loader, utils
