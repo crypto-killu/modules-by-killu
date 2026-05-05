@@ -1,10 +1,10 @@
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
 # meta developer: @dubai_ip
-# meta pic: https://x0.at/5b6t.jpg
-# scope: Heroku_only
-# version: 1.1
+# meta banner: https://raw.githubusercontent.com/crypto-killu/modules-by-killu/main/Module-banners/File-creator.jpg
+# scope: Heroku, Hikka
+# version: 1.3
 # author: Killu
-# desc: Модуль для создания различных файлов.
+# Description: Модуль для создания различных файлов.
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
 
 from .. import loader, utils
