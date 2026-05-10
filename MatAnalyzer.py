@@ -1,3 +1,12 @@
+# ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
+# meta developer: @dubai_ip
+# meta banner: https://x0.at/BimD.jpg
+# scope: Heroku, Hikka
+# version: 2.1
+# author: Killu
+# Description: Анализирует маты в чате за последние 10к сообщений.
+# ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
+
 from .. import loader, utils
 from telethon.tl.types import Message
 from collections import Counter
