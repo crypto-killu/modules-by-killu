@@ -13,7 +13,7 @@ import io
 
 @loader.tds
 class CFileMod(loader.Module):
-    """Создаёт файл из любого кода (даже очень длинного)"""
+    """Создаёт файл из любого кода"""
 
     strings = {
         "name": "File-creator",
