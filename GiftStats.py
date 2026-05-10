@@ -14,7 +14,7 @@ import asyncio
 
 @loader.tds
 class GiftStatsMod(loader.Module):
-    """Показывает статистику подарков пользователя с ценами NFT"""
+    """Показывает статистику подарков пользователя"""
 
     strings = {
         "name": "GiftStats",
