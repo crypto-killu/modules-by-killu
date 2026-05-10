@@ -14,7 +14,7 @@ import re
 
 @loader.tds
 class MatAnalyzerMod(loader.Module):
-    """Анализатор МАТОВ в чате (только русские маты)"""
+    """Анализатор матов в чате"""
     
     strings = {
         "name": "MatAnalyzer",
@@ -128,7 +128,7 @@ class MatAnalyzerMod(loader.Module):
         self.client = client
 
     async def matscmd(self, message: Message):
-        """— статистика матов в чате (только русские маты)"""
+        """— статистика матов в чате"""
         msg = await utils.answer(message, self.strings["analyzing"])
         
         try:
