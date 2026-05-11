@@ -100,7 +100,7 @@ class Maze:
 class GameState:
     def __init__(self, maze: list, start: Tuple[int, int],
                  player1_id: int, player2_id: Optional[int] = None):
-                     pass
+                     
         self.maze = [row[:] for row in maze]
         self.start = start
         self.finish = self._find_finish()
