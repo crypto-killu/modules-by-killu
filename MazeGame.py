@@ -340,7 +340,7 @@ class MazeModMod(loader.Module):
     @loader.unrestricted
     @loader.ratelimit
     async def mazecmd(self, message: Message):
-        """короче, лабиринт, ок? это типо игра, ну не типо, а игра. играй, ок?"""
+        """команда .maze игра одному, команда .maze игра с собеседником."""
         player1_id = message.sender_id
         player2_id = None
         reply = await message.get_reply_message()
