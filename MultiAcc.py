@@ -1,6 +1,6 @@
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
 # meta developer: @dubai_ip
-# meta pic: https://te.legra.ph/file/example.jpg
+# meta pic: https://raw.githubusercontent.com/crypto-killu/modules-by-killu/main/Module-banners/MultiAcc.jpg
 # scope: Heroku_only
 # version: 3.1
 # author: Killu
