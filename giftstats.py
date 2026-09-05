@@ -150,10 +150,11 @@ class GiftStatsMod(loader.Module):
 
     @staticmethod
     def _format_stars(value: float) -> str:
-        """Форматирует звёзды: целые — без десятичных, дробные — обрезая нули."""
+        """Форматирует звёзды: целые — без десятичных, дробные — максимум 2 знака после точки."""
+        value = round(value, 2)
         if value == int(value):
             return str(int(value))
-        return f"{value:.9f}".rstrip('0').rstrip('.')
+        return f"{value:.2f}".rstrip('0').rstrip('.')
 
     async def _fetch_stars_summary(self, client, limit=100, max_pages=1000):
         """Собирает сводку по звёздным транзакциям своего аккаунта:
