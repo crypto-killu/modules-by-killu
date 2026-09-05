@@ -9,7 +9,12 @@
 
 from .. import loader, utils
 from telethon.tl.types import Message, InputPeerSelf
-from telethon.tl.functions.payments import GetSavedStarGiftsRequest, GetUniqueStarGiftValueInfoRequest
+from telethon.tl.functions.payments import (
+    GetSavedStarGiftsRequest,
+    GetUniqueStarGiftValueInfoRequest,
+    GetStarsTransactionsRequest,
+    GetStarsStatusRequest,
+)
 import asyncio
 
 @loader.tds
@@ -46,6 +51,12 @@ class GiftStatsMod(loader.Module):
             "• <emoji document_id=5879905000972358125>👥</emoji> Общая стоимость подарков\n   за звезды: {} <emoji document_id=5924870095925942277>⭐️</emoji>\n"
             "• <emoji document_id=5891105528356018797>💎</emoji> Общая стоимость NFT: {}"
         ),
+        "stars_stats_footer": (
+            "\n\n<tg-emoji emoji-id=5444860552310457690>💰</tg-emoji><b> Количество транзакций:</b> {}\n"
+            "├ Звезд отправлено: {}\n"
+            "└ Звезд получено: {}\n"
+            "<b>Баланс сейчас:</b> {}"
+        ),
     }
 
     async def giftstatcmd(self, message: Message):
@@ -80,7 +91,7 @@ class GiftStatsMod(loader.Module):
         nft_value_str = await self._get_nft_total_values(message.client, all_gifts)
 
         if is_self:
-            await message.edit(self.strings("stats_self").format(
+            stats_text = self.strings("stats_self").format(
                 name,
                 total_gifts,
                 stats['обычные'],
@@ -92,7 +103,20 @@ class GiftStatsMod(loader.Module):
                 stats['открытые'],
                 stats['total_stars'],
                 nft_value_str
-            ))
+            )
+
+            stars_summary = await self._fetch_stars_summary(message.client)
+            if stars_summary:
+                stats_text += self.strings("stars_stats_footer").format(
+                    stars_summary['total_tx'],
+                    stars_summary['sent'],
+                    stars_summary['received'],
+                    stars_summary['balance'],
+                )
+                if stars_summary['total_tx'] == 0 and stars_summary.get('debug'):
+                    stats_text += f"\n\n<code>[debug] {stars_summary['debug']}</code>"
+
+            await message.edit(stats_text)
         else:
             await message.edit(self.strings("stats_other").format(
                 name,
@@ -105,6 +129,87 @@ class GiftStatsMod(loader.Module):
                 stats['total_stars'],
                 nft_value_str
             ))
+
+    async def _fetch_stars_summary(self, client, limit=100, max_pages=1000):
+        """Собирает сводку по звёздным транзакциям своего аккаунта:
+        общее число транзакций, сколько отправлено/получено звёзд, текущий баланс.
+
+        max_pages — это просто защита от бесконечного цикла (1000 страниц * 100 =
+        100k транзакций с большим запасом), а не реальный лимит на твою историю.
+
+        Если что-то пошло не так — кладём причину в 'debug', чтобы её было видно
+        прямо в ответе бота (а не только в консоли, которую не всегда видно)."""
+        debug = None
+
+        try:
+            balance_result = await client(GetStarsStatusRequest(peer=InputPeerSelf()))
+            balance = getattr(getattr(balance_result, 'balance', None), 'amount', 0) or 0
+        except Exception as e:
+            balance = "н/д"
+            debug = f"GetStarsStatus упал: {type(e).__name__}: {e}"
+
+        sent = 0
+        received = 0
+        total_tx = 0
+        offset = ""
+        first_page_raw = None
+
+        for page_num in range(max_pages):
+            try:
+                result = await client(GetStarsTransactionsRequest(
+                    peer=InputPeerSelf(),
+                    offset=offset,
+                    limit=limit,
+                ))
+            except Exception as e:
+                debug = f"GetStarsTransactions упал: {type(e).__name__}: {e}"
+                break
+
+            if page_num == 0:
+                try:
+                    raw_history = result.history if hasattr(result, 'history') else None
+                    if raw_history:
+                        first_tx_dump = str(raw_history[0].to_dict())[:500]
+                        first_page_raw = (
+                            f"has 'history' attr, len={len(raw_history)}, "
+                            f"first_tx={first_tx_dump}"
+                        )
+                    else:
+                        attrs = [a for a in dir(result) if not a.startswith('_')]
+                        first_page_raw = (
+                            f"result has NO 'history' or it's empty/None. "
+                            f"type={type(result).__name__}, attrs={attrs}"
+                        )
+                except Exception as e:
+                    first_page_raw = f"debug dump упал: {type(e).__name__}: {e}"
+
+            transactions = getattr(result, 'history', None) or []
+            total_tx += len(transactions)
+
+            for tx in transactions:
+                amount_obj = getattr(tx, 'amount', None)
+                amount = getattr(amount_obj, 'amount', 0) or 0
+                if amount < 0:
+                    sent += abs(amount)
+                else:
+                    received += amount
+
+            offset = getattr(result, 'next_offset', '') or ''
+            if not offset or len(transactions) < limit:
+                break
+
+            await asyncio.sleep(0.3)  # небольшая пауза, чтобы не словить FloodWait на большой истории
+
+        if total_tx == 0 and debug is None:
+            debug = f"Запрос прошёл без ошибок, но вернул 0 транзакций. Сырой ответ: {first_page_raw}"
+
+        return {
+            'total_tx': total_tx,
+            'sent': sent,
+            'received': received,
+            'balance': balance,
+            'debug': debug,
+        }
 
     async def _get_peer_and_check_self(self, message, args, reply):
         client = message.client
