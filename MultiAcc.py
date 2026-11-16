@@ -228,10 +228,9 @@ REASON_KEYS = {k: list(v) for k, v in REASON_SETS.items() if k in ("user", "bot"
 REASON_KEYS["msg"] = REASON_KEYS["story"] = list(MSG_KW)
 
 FAQ = (
-    '<tg-emoji emoji-id="5456250960198274077">🌘</tg-emoji> <strong>FAQ</strong>\n\n'
+    '<tg-emoji emoji-id="5456217626957091223">🌘</tg-emoji> <strong>FAQ</strong>\n\n'
     "<strong>Как добавить аккаунт?</strong>\n"
-    "<blockquote><code>.addtvink</code> → «Номер» → «Отправить код» → «Код» (и «Облачный пароль», если есть) → «Подтвердить». "
-    "Код лучше вводить через пробелы: <code>1 2 3 4 5</code>, иначе Telegram может его сжечь.</blockquote>\n\n"
+    "<blockquote><code>addtvink</code> → «Номер» → «Отправить код» → «Код» (и «Облачный пароль», если есть) → «Подтвердить».\n\n"
     "<strong>Как запустить действие?</strong>\n"
     "<blockquote>Выбери действие в меню, нажми кнопки полей и впиши значения в строку ввода, затем «Запуск».</blockquote>\n\n"
     "<strong>Что такое диапазон аккаунтов?</strong>\n"
@@ -240,8 +239,8 @@ FAQ = (
     "<blockquote>«Жалоба» → «Цель» (@юзер, ссылка на канал, пост или историю) → «Выбрать причину». "
     "«Автоопределение» само поймёт тип цели и отправит все причины.</blockquote>\n\n"
     "<strong>Как удалить аккаунт или выгрузить сессии?</strong>\n"
-    "<blockquote><code>.delacc 2</code> — удалить аккаунт №2 из меню.\n"
-    "<code>.tfile</code> — файл со всеми сессиями, лучше только в Избранном.</blockquote>"
+    "<blockquote><code>delacc 2</code> — удалить аккаунт №2 из меню.\n"
+    "<code>tfile</code> — файл со всеми сессиями, лучше только в Избранном.</blockquote>"
 )
 
 
@@ -441,7 +440,7 @@ class MultiAccMod(loader.Module):
     def _menu(self):
         names = "\n".join(f"<b>{i}.</b> {utils.escape_html(self._name(d['me']))}" for i, d in enumerate(self._accounts.values(), 1))
         text = (
-            '<tg-emoji emoji-id="5456250960198274077">🌘</tg-emoji> <strong>Меню аккаунтов:</strong>\n\n'
+            '<tg-emoji emoji-id="5456625794879099391">🌘</tg-emoji> <strong>Меню аккаунтов:</strong>\n\n'
             f"<blockquote expandable>{names or 'Нет аккаунтов'}</blockquote>\n\n"
             "<strong>Выбор действия:</strong>"
         )
@@ -633,8 +632,8 @@ class MultiAccMod(loader.Module):
 
         await call.edit(
             text=(
-                f"<tg-emoji emoji-id=5458805056990119991>🌘</tg-emoji> <b>Аккаунт добавлен:</b>\n"
-                f"👤 {self._name(me)}\n📱 +{phone}\n🆔 {me.id}"
+                f"<tg-emoji emoji-id=5456250960198274077>🌘</tg-emoji> <b>Аккаунт добавлен:</b>\n"
+                f"┌ {self._name(me)}\n├ +{phone}\n└ {me.id}"
             ),
             reply_markup=[[{"text": "Меню", "callback": self._menu_cb}]],
         )
