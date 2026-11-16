@@ -2,32 +2,36 @@
 # meta developer: @dubai_ip
 # meta banner: https://raw.githubusercontent.com/crypto-killu/modules-by-killu/main/Module-banners/MazeGame.jpg
 # scope: Heroku, Hikka
-# version: 5.0
+# version: 5.1
 # author: Killu
 # Description: Модуль для игры одному или с собеседником.
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
 
-import asyncio
 import logging
 import random
-import math
 from typing import Optional, Tuple, List
 
 from telethon import TelegramClient
 from telethon.tl.types import Message
-from telethon.tl.functions.users import GetFullUserRequest
 
-from .. import loader
+from .. import loader, utils
 from ..inline.types import InlineCall
 
 logger = logging.getLogger(__name__)
+
+WALL = '<tg-emoji emoji-id=5231249189907761291>⬛️</tg-emoji>'
+PATH = '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>'
+FIRE = '<tg-emoji emoji-id=5231269182980525488>🔥</tg-emoji>'
+FROG = '<tg-emoji emoji-id=5424605383463316658>🐸</tg-emoji>'
+P1 = '<tg-emoji emoji-id=5424900241558121200>👾</tg-emoji>'
+P2 = '<tg-emoji emoji-id=5424662253125278534>🫥</tg-emoji>'
 
 class Maze:
     def __init__(self, rows: int, cols: int, wall_fire_percent: int = 15):
         self.rows = rows if rows % 2 == 1 else rows + 1
         self.cols = cols if cols % 2 == 1 else cols + 1
         self.wall_fire_percent = wall_fire_percent
-        self.grid = [['<tg-emoji emoji-id=5231249189907761291>⬛️</tg-emoji>' for _ in range(self.cols)] for _ in range(self.rows)]
+        self.grid = [[WALL for _ in range(self.cols)] for _ in range(self.rows)]
 
     def _in_bounds(self, r: int, c: int) -> bool:
         return 0 <= r < self.rows and 0 <= c < self.cols
@@ -37,16 +41,16 @@ class Maze:
         random.shuffle(directions)
         for dr, dc in directions:
             nr, nc = r + dr, c + dc
-            if self._in_bounds(nr, nc) and self.grid[nr][nc] == '<tg-emoji emoji-id=5231249189907761291>⬛️</tg-emoji>':
-                self.grid[r + dr // 2][c + dc // 2] = '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>'
-                self.grid[nr][nc] = '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>'
+            if self._in_bounds(nr, nc) and self.grid[nr][nc] == WALL:
+                self.grid[r + dr // 2][c + dc // 2] = PATH
+                self.grid[nr][nc] = PATH
                 self._carve_passages_from(nr, nc)
 
     def _count_passage_neighbors(self, r: int, c: int) -> int:
         count = 0
         for dr, dc in [(0, 2), (2, 0), (0, -2), (-2, 0)]:
             nr, nc = r + dr, c + dc
-            if self._in_bounds(nr, nc) and self.grid[nr][nc] == '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>':
+            if self._in_bounds(nr, nc) and self.grid[nr][nc] == PATH:
                 count += 1
         return count
 
@@ -54,7 +58,7 @@ class Maze:
         passages = []
         for r in range(1, self.rows, 2):
             for c in range(1, self.cols, 2):
-                if self.grid[r][c] == '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>':
+                if self.grid[r][c] == PATH:
                     dist_to_start = abs(r - start_pos[0]) + abs(c - start_pos[1])
                     if dist_to_start < min_distance:
                         continue
@@ -81,7 +85,7 @@ class Maze:
                 dist = abs(dr) + abs(dc)
                 if dist < min_distance or dist > max_distance:
                     continue
-                if self._in_bounds(nr, nc) and self.grid[nr][nc] == '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>':
+                if self._in_bounds(nr, nc) and self.grid[nr][nc] == PATH:
                     candidates.append((dist, nr, nc))
         
         if candidates:
@@ -92,16 +96,16 @@ class Maze:
             return random.choice(closest)
         return None
 
-    def generate(self, player2_start: Optional[Tuple[int, int]] = None) -> Tuple[list, Tuple[int, int], Optional[Tuple[int, int]]]:
+    def generate(self, with_player2: bool = False) -> Tuple[list, Tuple[int, int], Optional[Tuple[int, int]]]:
         start_r = random.randrange(1, self.rows, 2)
         start_c = random.randrange(1, self.cols, 2)
-        self.grid[start_r][start_c] = '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>'
+        self.grid[start_r][start_c] = PATH
         self._carve_passages_from(start_r, start_c)
 
         passages = []
         for r in range(1, self.rows, 2):
             for c in range(1, self.cols, 2):
-                if self.grid[r][c] == '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>':
+                if self.grid[r][c] == PATH:
                     passages.append((r, c))
 
         good_starts = [p for p in passages if self._count_passage_neighbors(p[0], p[1]) >= 2]
@@ -112,7 +116,7 @@ class Maze:
 
         # Ищем позицию для второго игрока РЯДОМ с первым
         player2_pos = None
-        if player2_start:
+        if with_player2:
             # Ищем проход рядом с первым игроком (расстояние 1-2 клетки)
             nearby = self._find_nearby_passage(start, min_distance=1, max_distance=2)
             if nearby:
@@ -144,7 +148,7 @@ class Maze:
                 max_dist = 0
                 for r in range(1, self.rows, 2):
                     for c in range(1, self.cols, 2):
-                        if self.grid[r][c] == '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>' and (r, c) != start:
+                        if self.grid[r][c] == PATH and (r, c) != start:
                             if player2_pos and (r, c) == player2_pos:
                                 continue
                             dist = abs(r - start[0]) + abs(c - start[1])
@@ -155,20 +159,20 @@ class Maze:
                     fr, fc = candidate
                 else:
                     fr, fc = start[0] + 2, start[1]
-                    if not self._in_bounds(fr, fc) or self.grid[fr][fc] != '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>':
+                    if not self._in_bounds(fr, fc) or self.grid[fr][fc] != PATH:
                         fr, fc = start[0], start[1] + 2
 
-        self.grid[fr][fc] = '<tg-emoji emoji-id=5424605383463316658>🐸</tg-emoji>'
+        self.grid[fr][fc] = FROG
 
         walls = []
         for r in range(1, self.rows - 1):
             for c in range(1, self.cols - 1):
-                if self.grid[r][c] == '<tg-emoji emoji-id=5231249189907761291>⬛️</tg-emoji>':
+                if self.grid[r][c] == WALL:
                     walls.append((r, c))
         fire_count = int(len(walls) * self.wall_fire_percent / 100)
         random.shuffle(walls)
         for r, c in walls[:fire_count]:
-            self.grid[r][c] = '<tg-emoji emoji-id=5231269182980525488>🔥</tg-emoji>'
+            self.grid[r][c] = FIRE
 
         return self.grid, start, player2_pos
 
@@ -179,7 +183,7 @@ class GameState:
         self.maze = [row[:] for row in maze]
         self.start = start
         self.finish = self._find_finish()
-        self.player1 = {'id': player1_id, 'pos': start, 'symbol': '<tg-emoji emoji-id=5424900241558121200>👾</tg-emoji>'}
+        self.player1 = {'id': player1_id, 'pos': start, 'symbol': P1}
         self.player2 = None
         self.turn = 1
         self.finished = False
@@ -191,15 +195,15 @@ class GameState:
 
         if player2_id and player2_pos:
             r2, c2 = player2_pos
-            self.player2 = {'id': player2_id, 'pos': player2_pos, 'symbol': '<tg-emoji emoji-id=5424662253125278534>🫥</tg-emoji>'}
-            if self.maze[r2][c2] == '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>':
+            self.player2 = {'id': player2_id, 'pos': player2_pos, 'symbol': P2}
+            if self.maze[r2][c2] == PATH:
                 self.maze[r2][c2] = self.player2['symbol']
             else:
                 # Если клетка занята, ищем свободную рядом
                 for dr, dc in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
                     nr, nc = r2 + dr, c2 + dc
                     if (0 <= nr < len(self.maze) and 0 <= nc < len(self.maze[0]) and 
-                        self.maze[nr][nc] == '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>'):
+                        self.maze[nr][nc] == PATH):
                         self.player2['pos'] = (nr, nc)
                         self.maze[nr][nc] = self.player2['symbol']
                         break
@@ -207,7 +211,7 @@ class GameState:
     def _find_finish(self) -> Tuple[int, int]:
         for r, row in enumerate(self.maze):
             for c, cell in enumerate(row):
-                if cell == '<tg-emoji emoji-id=5424605383463316658>🐸</tg-emoji>':
+                if cell == FROG:
                     return (r, c)
         return (-1, -1)
 
@@ -233,11 +237,11 @@ class GameState:
 
         cell = self.maze[nr][nc]
 
-        if cell == '<tg-emoji emoji-id=5231249189907761291>⬛️</tg-emoji>':
+        if cell == WALL:
             return 'wall'
-        if cell == '<tg-emoji emoji-id=5231269182980525488>🔥</tg-emoji>':
+        if cell == FIRE:
             return 'fire'
-        if cell == '<tg-emoji emoji-id=5424605383463316658>🐸</tg-emoji>':
+        if cell == FROG:
             return 'win'
 
         other = self.other_player(player_num)
@@ -250,7 +254,7 @@ class GameState:
         player = self.get_player(player_num)
         r, c = player['pos']
         nr, nc = r + dr, c + dc
-        self.maze[r][c] = '<tg-emoji emoji-id=5231229729410943257>⬜️</tg-emoji>'
+        self.maze[r][c] = PATH
         player['pos'] = (nr, nc)
         self.maze[nr][nc] = player['symbol']
         self.steps += 1
@@ -258,7 +262,7 @@ class GameState:
     def get_view(self, player_num: int, view_size: int = 7) -> list:
         player = self.get_player(player_num)
         if not player:
-            return [['<tg-emoji emoji-id=5231249189907761291>⬛️</tg-emoji>' for _ in range(view_size)] for _ in range(view_size)]
+            return [[WALL for _ in range(view_size)] for _ in range(view_size)]
 
         pr, pc = player['pos']
         rows = len(self.maze)
@@ -283,7 +287,7 @@ class GameState:
                 if 0 <= r < rows and 0 <= c < cols:
                     row.append(self.maze[r][c])
                 else:
-                    row.append('<tg-emoji emoji-id=5231249189907761291>⬛️</tg-emoji>')
+                    row.append(WALL)
             view.append(row)
 
         return view
@@ -299,7 +303,7 @@ class MazeModMod(loader.Module):
 
     strings = {
         "name": "MazeGame",
-        "cfg_width": "Размер лабиринта (нечётное число, по умолчанию 21)",
+        "cfg_width": "Размер лабиринта (по умолчанию 10, чётное округляется до нечётного)",
         "cfg_wall_fire": "Процент внутренних стен, заменяемых на огонь (0-100, по умолчанию 15)",
         "cfg_view_single": "Размер видимой области для одного игрока (по умолчанию 6, может быть чётным или нечётным)",
         "cfg_view_multi": "Размер видимой области для двух игроков (по умолчанию 7, может быть чётным или нечётным)",
@@ -308,7 +312,7 @@ class MazeModMod(loader.Module):
         "turn": "Сейчас ходит {player}\n\n<b>Шагов:</b> <u>{steps}</u>",
         "move_ok": "<b>Ход сделан</b>",
         "move_blocked": "<b>Туда нельзя ходить!</b>",
-        "move_wall": "<b>Не можешь походить, стена!</b> '<tg-emoji emoji-id=5231249189907761291>⬛️</tg-emoji>'",
+        "move_wall": "<b>Не можешь походить, стена!</b> WALL",
         "move_occupied": "<b>Там уже другой игрок!</b>",
         "fire_loss_single": "{player} наступил на огонь... ты проиграл...",
         "fire_loss_multi": "{player} наступил на огонь... вы проиграли...",
@@ -330,19 +334,18 @@ class MazeModMod(loader.Module):
         self.active_games = {}
 
     async def client_ready(self, client: TelegramClient, db):
-        self._db = db
         self._client = client
 
     async def _get_user_name(self, user_id: int) -> str:
         try:
             user = await self._client.get_entity(user_id)
             if user.first_name:
-                return user.first_name.split()[0]
+                return utils.escape_html(user.first_name.split()[0])
             elif user.username:
                 return f"@{user.username}"
             else:
                 return f"Пользователь {user_id}"
-        except:
+        except Exception:
             return f"Пользователь {user_id}"
 
     def _get_view_size(self, game: GameState) -> int:
@@ -367,17 +370,12 @@ class MazeModMod(loader.Module):
         fire_pct = self.config["wall_fire_percent"]
         maze_gen = Maze(size, size, wall_fire_percent=fire_pct)
         
-        maze_grid, start, player2_pos = maze_gen.generate(player2_start=None)
-        
-        if player2_id and not player2_pos:
-            logger.warning("Позиция для второго игрока не найдена, генерируем заново")
-            maze_grid, start, player2_pos = maze_gen.generate(player2_start=(start[0], start[1]))
+        maze_grid, start, player2_pos = maze_gen.generate(with_player2=bool(player2_id))
 
         game = GameState(maze_grid, start, player1_id, player2_id, player2_pos)
-        chat_id = message.chat_id
-        self.active_games[chat_id] = game
-        
-        logger.info(f"Создана игра для {player1_id} и {player2_id} в чате {chat_id}")
+        # своя игра на каждое сообщение, чтобы кнопки старой игры не двигали новую
+        game_id = f"{message.chat_id}:{message.id}"
+        self.active_games[game_id] = game
 
         if player2_id and game.player2:
             p1_name = await self._get_user_name(player1_id)
@@ -403,23 +401,11 @@ class MazeModMod(loader.Module):
             text=text,
             message=message,
             always_allow=allowed_users,
-            reply_markup=self._build_keyboard(chat_id, game),
+            reply_markup=self._build_keyboard(game_id),
             manual_security=True,
         )
 
-    def _build_keyboard(self, game_id: int, game: GameState = None):
-        if game is None:
-            game = self.active_games.get(game_id)
-        if not game:
-            return [
-                [{"text": "🔼", "callback": self._move_cb, "args": (game_id, -1, 0)}],
-                [
-                    {"text": "◀️", "callback": self._move_cb, "args": (game_id, 0, -1)},
-                    {"text": "▶️", "callback": self._move_cb, "args": (game_id, 0, 1)},
-                ],
-                [{"text": "🔽", "callback": self._move_cb, "args": (game_id, 1, 0)}],
-            ]
-
+    def _build_keyboard(self, game_id):
         return [
             [{"text": "🔼", "callback": self._move_cb, "args": (game_id, -1, 0)}],
             [
@@ -429,7 +415,7 @@ class MazeModMod(loader.Module):
             [{"text": "🔽", "callback": self._move_cb, "args": (game_id, 1, 0)}],
         ]
 
-    async def _move_cb(self, call: InlineCall, game_id: int, dr: int, dc: int):
+    async def _move_cb(self, call: InlineCall, game_id: str, dr: int, dc: int):
         try:
             game = self.active_games.get(game_id)
             if not game:
@@ -501,8 +487,8 @@ class MazeModMod(loader.Module):
                 header = f"{status}\n\n<b>Шагов:</b> <u>{game.steps}</u>"
 
             text = header + "\n\n" + game.to_display(player_num, self._get_view_size(game))
-            await call.edit(text=text, reply_markup=self._build_keyboard(game_id, game))
+            await call.edit(text=text, reply_markup=self._build_keyboard(game_id))
 
-        except Exception as e:
+        except Exception:
             logger.exception("Ошибка в _move_cb")
             await call.answer("Произошла внутренняя ошибка", show_alert=True)
