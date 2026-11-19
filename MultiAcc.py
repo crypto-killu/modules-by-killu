@@ -1,6 +1,6 @@
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
 # meta developer: @dubai_ip
-# meta banner: https://raw.githubusercontent.com/crypto-killu/modules-by-killu/main/Module-banners/MultiAcc.jpg
+# meta banner: https://raw.githubusercontent.com/crypto-killu/modules-by-killu/main/Module-banners/MultiAcc-v2.jpg
 # scope: Heroku_only
 # version: 5.1
 # author: Killu
