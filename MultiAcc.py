@@ -641,7 +641,7 @@ class MultiAccMod(loader.Module):
     # ── Действия меню (v — значения полей из ACTIONS) ────────
 
     async def delacccmd(self, message):
-        """[номер] — удалить аккаунт (номер из .accmenu)"""
+        """[номер] — удалить аккаунт (номер из accmenu)"""
         await self._load(message.client)
         args = utils.get_args_raw(message).strip()
         if not args.isdigit():
@@ -667,9 +667,9 @@ class MultiAccMod(loader.Module):
     def _acc_card(self, d):
         me = d["me"]
         return (
-            f"<blockquote>👤 <b>{utils.escape_html(self._name(me))}</b> {self._uname(me)}\n"
-            f"📱 <code>+{d['phone']}</code>\n"
-            f"🆔 <code>{me.id}</code></blockquote>"
+            f"<blockquote>┌ <b>{utils.escape_html(self._name(me))}</b> {self._uname(me)}\n"
+            f"├ <code>+{d['phone']}</code>\n"
+            f"└ <code>{me.id}</code></blockquote>"
         )
 
     async def _delacc_yes(self, call: InlineCall, uid):
