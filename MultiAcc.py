@@ -2,7 +2,7 @@
 # meta developer: @dubai_ip
 # meta banner: https://raw.githubusercontent.com/crypto-killu/modules-by-killu/main/Module-banners/MultiAcc.jpg
 # scope: Heroku_only
-# version: 5.0
+# version: 5.1
 # author: Killu
 # desc: Управление всеми своими твинк аккаунтами в Telegram
 # ◇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━◇
@@ -645,23 +645,64 @@ class MultiAccMod(loader.Module):
         await self._load(message.client)
         args = utils.get_args_raw(message).strip()
         if not args.isdigit():
-            return await utils.answer(message, f"{INFO} <code>.delacc 1</code> (номер из <code>.accmenu</code>)")
-        await utils.answer(message, await self._a_delacc({"num": args}))
-
-    async def _a_delacc(self, v):
-        if not v["num"].isdigit():
-            return f"{INFO} Номер аккаунта — число из списка"
-        uid, d = self._by_idx(int(v["num"]))
+            return await utils.answer(message, f"{INFO} <code>{self.get_prefix()}delacc 1</code> (номер из <code>{self.get_prefix()}accmenu</code>)")
+        uid, d = self._by_idx(int(args))
         if uid is None:
-            return f"{INFO} Аккаунт не найден"
-        name = self._name(d["me"])
+            return await utils.answer(message, f"{INFO} Аккаунт №{args} не найден")
+
+        await self._form(
+            message,
+            (
+                "<tg-emoji emoji-id=5980925264589232084>⚠️</tg-emoji> <b>Удаление аккаунта</b>\n\n"
+                f"{self._acc_card(d)}\n\n"
+                "Юзербот выйдет из этого аккаунта, а сессия будет удалена из модуля.\n\n"
+                "<b><u>Это действие нельзя отменить.</u></b>"
+            ),
+            [[
+                {"text": "Удалить", "callback": self._delacc_yes, "args": (uid,), "style": "danger"},
+                {"text": "Отмена", "callback": self._delacc_no, "style": "primary"},
+            ]],
+        )
+
+    def _acc_card(self, d):
+        me = d["me"]
+        return (
+            f"<blockquote>👤 <b>{utils.escape_html(self._name(me))}</b> {self._uname(me)}\n"
+            f"📱 <code>+{d['phone']}</code>\n"
+            f"🆔 <code>{me.id}</code></blockquote>"
+        )
+
+    async def _delacc_yes(self, call: InlineCall, uid):
+        d = self._accounts.get(uid)
+        if d is None:
+            return await call.edit(f"{INFO} Аккаунт уже удалён")
+        await call.edit('<tg-emoji emoji-id="5328311576736833844">🔴</tg-emoji> <strong>Обработка</strong>')
+
+        c = d["client"]
         try:
-            await d["client"].disconnect()
-        except Exception:
-            pass
+            if not c.is_connected():
+                await c.connect()
+            logged_out = await c.log_out()  # завершает сессию на серверах Telegram
+        except Exception as e:
+            logger.error(f"log_out для {uid} не удался: {e}")
+            logged_out = False
+
+        card = self._acc_card(d)
         del self._accounts[uid]
         self._save()
-        return f"<tg-emoji emoji-id=5458572596180193103>🌘</tg-emoji> <b>Аккаунт удалён:</b> {name}"
+
+        tail = (
+            "Аккаунт удалён из модуля, юзербот вышел с аккаунта."
+            if logged_out else
+            "Аккаунт удалён из модуля, но выйти с него не удалось — "
+            "заверши сеанс вручную: Настройки → Устройства."
+        )
+        await call.edit(
+            f"<tg-emoji emoji-id=5458572596180193103>🌘</tg-emoji> <b>Аккаунт удалён</b>\n\n{card}\n\n{tail}"
+        )
+
+    async def _delacc_no(self, call: InlineCall):
+        await call.edit(f"{OK} <b>Удаление отменено</b>")
 
     async def _a_join(self, v):
         results = []
